@@ -42,9 +42,6 @@ sub take_snapshot {
 
     return;
 }
-if ($] >= 5.014_000) {
-    delete $Devel::ContinuousProfiler::{'take_snapshot'};
-}
 
 'I am an anarchist
 An antichrist
