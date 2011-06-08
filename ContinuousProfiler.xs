@@ -12,9 +12,9 @@ SV *count_down;
 #define COUNT_DOWN_set(i) SvIV_set(count_down, i                   )
 #else
 IV count_down;
-#define COUNT_DOWN()        count_down
-#define COUNT_DOWN_dec()  --count_down
-#define COUNT_DOWN_set(i)   count_down = i
+#define COUNT_DOWN()         count_down
+#define COUNT_DOWN_dec()  (--count_down    )
+#define COUNT_DOWN_set(i) (  count_down = i)
 #endif
 
 /* The inside_logger variable */
@@ -26,8 +26,8 @@ SV *inside_logger;
 #else
 IV inside_logger;
 #define INSIDE_LOGGER()     inside_logger
-#define INSIDE_LOGGER_on()  inside_logger = 1
-#define INSIDE_LOGGER_off() inside_logger = 0
+#define INSIDE_LOGGER_on()  (inside_logger = 1)
+#define INSIDE_LOGGER_off() (inside_logger = 0)
 #endif
 
 /* The log_size variable */
@@ -38,9 +38,9 @@ SV *log_size;
 #define LOG_SIZE()       SvIV    (log_size)
 #else
 IV log_size;
-#define LOG_SIZE_inc()   ++log_size
-#define LOG_SIZE_reset()   log_size = 0
-#define LOG_SIZE()         log_size
+#define LOG_SIZE_inc()   (++log_size    )
+#define LOG_SIZE_reset() (  log_size = 0)
+#define LOG_SIZE()       (  log_size    )
 #endif
 
 void
