@@ -18,5 +18,5 @@ SKIP: {
     unlink $file;
     diag( $data );
     ok( $data, "Got something" );
-    ok( eval($data), "It compiles );
+    ok( eval($data), "It compiles" );
 }
