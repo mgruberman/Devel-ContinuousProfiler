@@ -10,7 +10,7 @@ our %DATA;
 our $LAST_TIME_REPORT = 0;
 our $OUTPUT_HANDLE;
 our $OUTPUT_SEEKABLE;
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 XSLoader::load(__PACKAGE__, $VERSION);
 
@@ -38,7 +38,19 @@ sub take_snapshot {
             unshift @stack, $func;
         }
 
-        ++ $DATA{join ',', @stack};
+        my $t = time;
+        my $s = join ',', @stack;
+        if (my $h = $DATA{$s}) {
+            ++ $h->[0];
+            $h->[1] = $t;
+        }
+        else {
+            $DATA{$s} = [
+                1,
+                $t,
+                $t,
+            ];
+        }
 
         report();
     };
@@ -94,32 +106,32 @@ sub report {
     return if $LAST_TIME_REPORT == time;
     $LAST_TIME_REPORT = time;
 
-    my $report = report_string();
+    my $report = report_strings();
 
     if ($OUTPUT_HANDLE && $OUTPUT_SEEKABLE) {
         $OUTPUT_SEEKABLE = seek $OUTPUT_HANDLE, 0, 0;
         truncate $OUTPUT_HANDLE, 0;
-        syswrite $OUTPUT_HANDLE, $report;
+        syswrite $OUTPUT_HANDLE, $_ for @$report;
     } elsif ( $OUTPUT_HANDLE ) {
-        syswrite $OUTPUT_HANDLE, $report;
+        syswrite $OUTPUT_HANDLE, $_ for @$report;
     }
 
     return;
 }
 
-sub report_string {
+sub report_strings {
     my $max_length = 0;
     for ( values %DATA ) {
-        $max_length = length if length() > $max_length;
+        $max_length = length $_->[0] if length($_->[0]) > $max_length;
     }
 
     my $format = "=$$= %${max_length}d %s\n";
-    return
-        join '',
-            "=$$= " . __PACKAGE__ . " profiling stats.\n",
-            map { sprintf $format, $DATA{$_}, $_ }
-            sort { $DATA{$b} <=> $DATA{$a} || $a cmp $b }
-            keys %DATA;
+    return [
+        "=$$= $0 profiling stats.\n",
+        map { sprintf $format, $DATA{$_}[0], $_ }
+        sort { $DATA{$b}[0] <=> $DATA{$a}[0] || $DATA{$b}[1] <=> $DATA{$a}[1] }
+        keys %DATA
+    ];
 }
 
 'I am an anarchist
@@ -138,7 +150,7 @@ A paper airplane';
 
 __END__
 
--head1 NAME
+=head1 NAME
 
 Devel::ContinuousProfiler - Ultra cheap profiling for use in production
 
@@ -150,12 +162,42 @@ Devel::ContinuousProfiler - Ultra cheap profiling for use in production
 
 =head1 DESCRIPTION
 
-This module automatically writes profiling snapshots to a file,
-STDERR, or other destinations. By default, this writes to STDERR.
+This module automatically takes periodic snapshots of the callstack
+and prints reports of the hottest code. The CPU cost of doing the
+profiling work is automatically guestimated to be about 1/1024th your
+total.
 
+The report format:
 
+  =E<lt>pidE<gt>= E<lt>process nameE<gt> profiling stats.
+  =E<lt>pidE<gt>= E<lt>countE<gt> E<lt>frameE<gt>,E<lt>frameE<gt>,E<lt>frameE<gt>,...
+  =E<lt>pidE<gt>= E<lt>countE<gt> E<lt>frameE<gt>,E<lt>frameE<gt>,E<lt>frameE<gt>,...
+  =E<lt>pidE<gt>= E<lt>countE<gt> E<lt>frameE<gt>,E<lt>frameE<gt>,...
+  ...
+
+An example of some output gleaned from a very short script:
+
+  =14365= t/load.t profiling stats.
+  =14365= 1 Test::More::pass,Test::Builder::ok,Test::Builder::_unoverload_str,Test::Builder::_unoverload,Test::Builder::_try,(eval),Test::Builder::__ANON__,(eval),(eval),overload::BEGIN,Devel::ContinuousProfiler::take_snapshot,(eval)
+
+=head1 CAVEATS
+
+=over
+
+=item *
+
+This module's public API is under active development and
+experimentation.
+
+=item *
+
+CPAN testers is showing segfaults. Not sure what's going on there yet.
+
+=back
 
 =head1 INTERNAL API
+
+I'm only mentioning these 
 
 =over
 
@@ -169,6 +211,6 @@ STDERR, or other destinations. By default, this writes to STDERR.
 
 =item report
 
-=item report_string
+=item report_strings
 
 =back
