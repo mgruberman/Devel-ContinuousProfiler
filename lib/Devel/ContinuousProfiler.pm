@@ -10,7 +10,7 @@ our %DATA;
 our $LAST_TIME_REPORT = 0;
 our $OUTPUT_HANDLE;
 our $OUTPUT_SEEKABLE;
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 XSLoader::load(__PACKAGE__, $VERSION);
 
