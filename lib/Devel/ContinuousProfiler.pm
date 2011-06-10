@@ -2,12 +2,21 @@ package Devel::ContinuousProfiler;
 # ABSTRACT: Ultra cheap profiling for use in production environments
 
 use strict;
+## no critic (UseWarnings, DotMatchAnything, NoCritic, NewLines, InterpolationOfMetachars))
+
+use English '-no_match_vars';
+
 use XSLoader;
 use constant _COUNT  => 0;
 use constant _DEEPER => 1;
 
+use constant _FILE => 2;
+use constant _FUNC => 3;
+
 our %DATA;
 our $LAST_TIME_REPORT = 0;
+our $FRAME_FORMAT;
+our $FRAME_FORMAT2;
 our $OUTPUT_HANDLE;
 our $OUTPUT_SEEKABLE;
 our $VERSION = '0.07';
@@ -15,27 +24,69 @@ our $VERSION = '0.07';
 XSLoader::load(__PACKAGE__, $VERSION);
 
 if ($ENV{PROFILER}) {
-    my %args = map { split '=', $_, 2 } split ',', $ENV{PROFILER};
+    my %args = map { split /=/, $_, 2 } split /,/, $ENV{PROFILER};
     if ($args{file}) {
-        open $OUTPUT_HANDLE, '>', $args{file};
-        $OUTPUT_SEEKABLE = 1;
+        output_filename( $args{file} );
+    }
+    if ($args{frame_format}) {
+        $FRAME_FORMAT = $args{frame_format};
+    }
+    if ($args{frame_format2}) {
+        $FRAME_FORMAT2 = $args{frame_format2};
     }
 }
-$OUTPUT_HANDLE ||= \ *STDERR;
+$OUTPUT_HANDLE = \ *STDERR unless defined $OUTPUT_HANDLE;
+$FRAME_FORMAT  = '%' . (1+_FUNC) . '$s' unless defined $FRAME_FORMAT;
+$FRAME_FORMAT2 = '%' . (1+_FILE) . '$s' unless defined $FRAME_FORMAT2;
 
 END { report() }
 
+sub frame_format {
+    return ( $FRAME_FORMAT, $FRAME_FORMAT2 ) = @_;
+}
+
+sub output_handle {
+    $OUTPUT_SEEKABLE = 1;
+    return $OUTPUT_HANDLE = shift;
+}
+
+sub output_filename {
+    my ( $file ) = @_;
+
+    ## no critic (InputOutput::RequireBriefOpen)
+    $OUTPUT_SEEKABLE = 0;
+    open $OUTPUT_HANDLE, '>', $file
+        or do {
+            warn "Can't open $file: $ERRNO";
+            return;
+        };
+    $OUTPUT_SEEKABLE = 1;
+
+    return $file;
+}
+
 sub take_snapshot {
+    ## no critic (Variables::RequireInitializationForLocalVars)
+    ## no critic (ErrorHandling::RequireCheckingReturnValueOfEval)
+    ## no critic (ControlStructures::ProhibitCStyleForLoops)
+
     local $@;
     eval {
 
         # Witty comment
-        package DB;
+        my $seen_take_snapshot;
         my @stack;
         for ( my $cx = 0;
-              my ( undef, undef, undef, $func ) = caller $cx;
+              my @frame = caller $cx;
               ++ $cx ) {
-            unshift @stack, $func;
+            if ( $frame[_FUNC] eq 'Devel::ContinuousProfiler::take_snapshot' ) {
+                $seen_take_snapshot = 1;
+            }
+            elsif ( $seen_take_snapshot ) {
+                my $p = sprintf($FRAME_FORMAT, @frame);
+                $p ||= sprintf($FRAME_FORMAT2, @frame);
+                unshift @stack, $p;
+            }
         }
 
         my $t = time;
@@ -120,14 +171,16 @@ sub report {
 }
 
 sub report_strings {
+    ## no critic (ReverseSortBlock)
+
     my $max_length = 0;
     for ( values %DATA ) {
         $max_length = length $_->[0] if length($_->[0]) > $max_length;
     }
 
-    my $format = "=$$= %${max_length}d %s\n";
+    my $format = "=$PID= %${max_length}d %s\n";
     return [
-        "=$$= $0 profiling stats.\n",
+        "=$PID= $PROGRAM_NAME profiling stats.\n",
         map { sprintf $format, $DATA{$_}[0], $_ }
         sort { $DATA{$b}[0] <=> $DATA{$a}[0] || $DATA{$b}[1] <=> $DATA{$a}[1] }
         keys %DATA
@@ -164,21 +217,32 @@ Devel::ContinuousProfiler - Ultra cheap profiling for use in production
 
 This module automatically takes periodic snapshots of the callstack
 and prints reports of the hottest code. The CPU cost of doing the
-profiling work is automatically guestimated to be about 1/1024th your
-total.
+profiling work is automatically scaled to about 1/1024th the total.
 
 The report format:
 
-  =E<lt>pidE<gt>= E<lt>process nameE<gt> profiling stats.
-  =E<lt>pidE<gt>= E<lt>countE<gt> E<lt>frameE<gt>,E<lt>frameE<gt>,E<lt>frameE<gt>,...
-  =E<lt>pidE<gt>= E<lt>countE<gt> E<lt>frameE<gt>,E<lt>frameE<gt>,E<lt>frameE<gt>,...
-  =E<lt>pidE<gt>= E<lt>countE<gt> E<lt>frameE<gt>,E<lt>frameE<gt>,...
+  =<pid>= <process name> profiling stats.
+  =<pid>= <count> <frame>,<frame>,<frame>,...
+  =<pid>= <count> <frame>,<frame>,<frame>,...
+  =<pid>= <count> <frame>,<frame>,...
   ...
 
 An example of some output gleaned from a very short script:
 
-  =14365= t/load.t profiling stats.
-  =14365= 1 Test::More::pass,Test::Builder::ok,Test::Builder::_unoverload_str,Test::Builder::_unoverload,Test::Builder::_try,(eval),Test::Builder::__ANON__,(eval),(eval),overload::BEGIN,Devel::ContinuousProfiler::take_snapshot,(eval)
+  =10203= eg/sample.pl profiling stats.
+  =10203= 11
+  =10203=  6 X::a,X::b
+  =10203=  4 X::a
+  =10203=  4 X::a,X::b,X::c
+  =10203=  2 X::a,X::b,X::c,X::d
+
+=head1 PUBLIC API
+
+The C<PROFILER> environment variable and the C<frame_format> and
+C<output_handle> functions. Ultimately, replace the C<take_snapshot>
+function if you want to get different reports.
+
+Consult the source and this API is still under active development.
 
 =head1 CAVEATS
 
