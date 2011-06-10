@@ -11,11 +11,11 @@ system @cmd;
 is( $?, 0, "@cmd" );
 
 SKIP: {
-    skip "Can't open $file: $!", 2 unless open my $fh, '<t/basic.tmp';
+    skip "Can't open t/basic.tmp: $!", 2 unless open my $fh, '<t/basic.tmp';
 
     local $/ = undef;
     my $data = readline $fh;
-    unlink $file;
+    unlink 't/basic.tmp';
     diag( $data );
     ok( $data, "Got something" );
     ok( eval($data), "It compiles" );
