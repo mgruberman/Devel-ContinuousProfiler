@@ -1,4 +1,4 @@
-use Test::More tests => 2;
+use Test::More tests => 3;
 require File::Temp;
 
 my $file = File::Temp::tmpnam();
@@ -20,7 +20,7 @@ SKIP: {
     local $/ = undef;
     my $data = readline $fh;
     unlink $file;
-
     diag( $data );
-    ok( eval $data, "It compiles" );
+    ok( $data, "Got something" );
+    ok( eval($data), "It compiles" );
 }
