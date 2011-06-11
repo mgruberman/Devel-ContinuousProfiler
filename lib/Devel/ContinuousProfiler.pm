@@ -2,6 +2,10 @@ package Devel::ContinuousProfiler;
 # ABSTRACT: Ultra cheap profiling for use in production environments
 
 use strict;
+## no critic (UseWarnings, DotMatchAnything, NoCritic, NewLines, InterpolationOfMetachars))
+
+use English '-no_match_vars';
+
 use XSLoader;
 use constant _COUNT  => 0;
 use constant _DEEPER => 1;
@@ -15,7 +19,7 @@ our $VERSION = '0.07';
 XSLoader::load(__PACKAGE__, $VERSION);
 
 if ($ENV{PROFILER}) {
-    my %args = map { split '=', $_, 2 } split ',', $ENV{PROFILER};
+    my %args = map { split /=/, $_, 2 } split /,/, $ENV{PROFILER};
     if ($args{file}) {
         open $OUTPUT_HANDLE, '>', $args{file};
         $OUTPUT_SEEKABLE = 1;
@@ -26,6 +30,10 @@ $OUTPUT_HANDLE ||= \ *STDERR;
 END { report() }
 
 sub take_snapshot {
+    ## no critic (Variables::RequireInitializationForLocalVars)
+    ## no critic (ErrorHandling::RequireCheckingReturnValueOfEval)
+    ## no critic (ControlStructures::ProhibitCStyleForLoops)
+
     local $@;
     eval {
 
@@ -120,6 +128,8 @@ sub report {
 }
 
 sub report_strings {
+    ## no critic (ReverseSortBlock)
+
     my $max_length = 0;
     for ( values %DATA ) {
         $max_length = length $_->[0] if length($_->[0]) > $max_length;
@@ -127,7 +137,7 @@ sub report_strings {
 
     my $format = "=$$= %${max_length}d %s\n";
     return [
-        "=$$= $0 profiling stats.\n",
+        "=$PID= $PROGRAM_NAME profiling stats.\n",
         map { sprintf $format, $DATA{$_}[0], $_ }
         sort { $DATA{$b}[0] <=> $DATA{$a}[0] || $DATA{$b}[1] <=> $DATA{$a}[1] }
         keys %DATA
