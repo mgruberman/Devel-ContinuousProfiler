@@ -9,7 +9,7 @@ my @cmd = (
         '-Mblib',
         '-MDevel::ContinuousProfiler',
         '-MData::Dumper',
-        '-e' => '1 for 1 .. 1_000_000; open STDOUT, ">", "' . $file . '" or die "Cant write to ' . $file . ': $!"; print Data::Dumper::Dumper(\%Devel::ContinuousProfiler::DATA)'
+        '-e' => '1 for 1..1_000_000;open(STDOUT,">","' . $file . '")||die$!;print Dumper(\%Devel::ContinuousProfiler::DATA)'
 );
 system @cmd;
 is( $?, 0, "@cmd" );
