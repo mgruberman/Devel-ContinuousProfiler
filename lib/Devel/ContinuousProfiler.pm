@@ -57,7 +57,6 @@ sub take_snapshot {
     eval {
 
         # Witty comment
-        package DB;
         my @stack;
         for ( my $cx = 0;
               my ( undef, undef, undef, $func ) = caller $cx;
