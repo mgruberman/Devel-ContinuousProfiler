@@ -178,7 +178,7 @@ sub report_strings {
         $max_length = length $_->[0] if length($_->[0]) > $max_length;
     }
 
-    my $format = "=$$= %${max_length}d %s\n";
+    my $format = "=$PID= %${max_length}d %s\n";
     return [
         "=$PID= $PROGRAM_NAME profiling stats.\n",
         map { sprintf $format, $DATA{$_}[0], $_ }
