@@ -33,27 +33,37 @@ sp_runops(pTHX)
     dVAR;
 #ifdef USE_ITHREADS
     SV * count_down_sv, *inside_logger_sv, *log_size_sv;
-    IV count_down;
-
     register OP *op = PL_op;
     while ((PL_op = op = CALL_FPTR(op->op_ppaddr)(aTHX))) {
-        count_down_sv = get_sv("Devel::ContinuousProfiler::count_down", GV_ADD);
-        count_down = SvIV(count_down);
-        if ( count_down > 0 ) {
+        count_down_sv = get_sv("Devel::ContinuousProfiler::count_down", 0);
+        assert(count_down_sv);
+        assert(SvIV(count_down_sv) >= 0);
+
+        if (SvTRUE(count_down_sv)) {
             sv_dec(count_down_sv);
         }
         else {
-            inside_logger_sv = get_sv("Devel::ContinuousProfiler::inside_logger", GV_ADD);
+            inside_logger_sv = get_sv("Devel::ContinuousProfiler::inside_logger", 0);
+            assert(inside_logger_sv);
+            assert(SvIV(inside_logger_sv) == 1
+                || SvIV(inside_logger_sv) == 0);
+
             log_size_sv = get_sv("Devel::ContinuousProfiler::log_size", GV_ADD);
-            if ( SvIV(inside_logger_sv) ) {
+            assert(log_size_sv);
+
+            if (SvTRUE(inside_logger_sv)) {
                 sv_inc(log_size_sv);
             }
             else {
-                SvIV_set(inside_logger_sv, 1);
-                SvIV_set(log_size_sv, 0);
+                sv_setiv(inside_logger_sv, 1);
+                sv_setiv(log_size_sv, 0);
                 take_snapshot(aTHX);
-                SvIV_set(count_down_sv, SvIV(log_size_sv) << 10);
-                SvIV_set(inside_logger_sv, 0);
+                sv_setiv(
+                    count_down_sv,
+                    SvIV(log_size_sv) > 1024
+                        ? (SvIV(log_size_sv) << 10)
+                        : (1024 << 10));
+                sv_setiv(inside_logger_sv, 0);
             }
         }
     }
@@ -85,37 +95,20 @@ sp_runops(pTHX)
 void
 _initialize()
 {
-    get_sv("Devel::ContinuousProfiler::count_down", GV_ADD);
-    get_sv("Devel::ContinuousProfiler::inside_logger", GV_ADD);
-    get_sv("Devel::ContinuousProfiler::log_size", GV_ADD);
+#ifdef USE_ITHREADS
+    sv_setiv(get_sv("Devel::ContinuousProfiler::count_down", GV_ADD), 0);
+    sv_setiv(get_sv("Devel::ContinuousProfiler::inside_logger", GV_ADD), 0);
+    sv_setiv(get_sv("Devel::ContinuousProfiler::log_size", GV_ADD), 1024 < 10);
+#endif
     PL_runops = sp_runops;
 }
 
 MODULE = Devel::ContinuousProfiler PACKAGE = Devel::ContinuousProfiler
 
+PROTOTYPES: DISABLE
+
 void
 _initialize()
-
-IV
-count_down()
-    CODE:
-        RETVAL = COUNT_DOWN();
-    OUTPUT:
-        RETVAL
-
-IV
-is_inside_logger()
-    CODE:
-        RETVAL = INSIDE_LOGGER();
-    OUTPUT:
-        RETVAL
-
-IV
-log_size()
-    CODE:
-        RETVAL = LOG_SIZE();
-    OUTPUT:
-        RETVAL
 
 BOOT:
     _initialize();
