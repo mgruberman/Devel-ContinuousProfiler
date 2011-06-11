@@ -38,7 +38,18 @@ sub take_snapshot {
             unshift @stack, $func;
         }
 
-        ++ $DATA{join ',', @stack};
+        my $t = time;
+        my $s = join ',', @stack;
+        if (my $h = $DATA{$s}) {
+            ++ $h->[0];
+            $h->[1] = $t;
+        }
+        else {
+            $DATA{$s} = [
+                1,
+                $t,
+            ];
+        }
 
         report();
     };
@@ -110,14 +121,14 @@ sub report {
 sub report_strings {
     my $max_length = 0;
     for ( values %DATA ) {
-        $max_length = length if length() > $max_length;
+        $max_length = length $_->[0] if length($_->[0]) > $max_length;
     }
 
     my $format = "=$$= %${max_length}d %s\n";
     return [
         "=$$= " . __PACKAGE__ . " profiling stats.\n",
-        map { sprintf $format, $DATA{$_}, $_ }
-        sort { $DATA{$b} <=> $DATA{$a} || $a cmp $b }
+        map { sprintf $format, $DATA{$_}[0], $_ }
+        sort { $DATA{$b}[0] <=> $DATA{$a}[0] || $DATA{$b}[1] <=> $DATA{$a}[1] }
         keys %DATA
     ];
 }
