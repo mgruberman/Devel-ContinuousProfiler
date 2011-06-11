@@ -21,13 +21,27 @@ XSLoader::load(__PACKAGE__, $VERSION);
 if ($ENV{PROFILER}) {
     my %args = map { split /=/, $_, 2 } split /,/, $ENV{PROFILER};
     if ($args{file}) {
-        open $OUTPUT_HANDLE, '>', $args{file};
-        $OUTPUT_SEEKABLE = 1;
+        output_filename( $args{file} );
     }
 }
 $OUTPUT_HANDLE = \ *STDERR unless defined $OUTPUT_HANDLE;
 
 END { report() }
+
+sub output_filename {
+    my ( $file ) = @_;
+
+    ## no critic (InputOutput::RequireBriefOpen)
+    $OUTPUT_SEEKABLE = 0;
+    open $OUTPUT_HANDLE, '>', $file
+        or do {
+            warn "Can't open $file: $ERRNO";
+            return;
+        };
+    $OUTPUT_SEEKABLE = 1;
+
+    return $file;
+}
 
 sub take_snapshot {
     ## no critic (Variables::RequireInitializationForLocalVars)
