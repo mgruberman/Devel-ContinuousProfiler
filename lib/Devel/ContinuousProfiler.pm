@@ -28,6 +28,11 @@ $OUTPUT_HANDLE = \ *STDERR unless defined $OUTPUT_HANDLE;
 
 END { report() }
 
+sub output_handle {
+    $OUTPUT_SEEKABLE = 1;
+    return $OUTPUT_HANDLE = shift;
+}
+
 sub output_filename {
     my ( $file ) = @_;
 
