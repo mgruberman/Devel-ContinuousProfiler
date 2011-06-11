@@ -162,12 +162,42 @@ Devel::ContinuousProfiler - Ultra cheap profiling for use in production
 
 =head1 DESCRIPTION
 
-This module automatically writes profiling snapshots to a file,
-STDERR, or other destinations. By default, this writes to STDERR.
+This module automatically takes periodic snapshots of the callstack
+and prints reports of the hottest code. The CPU cost of doing the
+profiling work is automatically guestimated to be about 1/1024th your
+total.
 
+The report format:
 
+  =E<lt>pidE<gt>= E<lt>process nameE<gt> profiling stats.
+  =E<lt>pidE<gt>= E<lt>countE<gt> E<lt>frameE<gt>,E<lt>frameE<gt>,E<lt>frameE<gt>,...
+  =E<lt>pidE<gt>= E<lt>countE<gt> E<lt>frameE<gt>,E<lt>frameE<gt>,E<lt>frameE<gt>,...
+  =E<lt>pidE<gt>= E<lt>countE<gt> E<lt>frameE<gt>,E<lt>frameE<gt>,...
+  ...
+
+An example of some output gleaned from a very short script:
+
+  =14365= t/load.t profiling stats.
+  =14365= 1 Test::More::pass,Test::Builder::ok,Test::Builder::_unoverload_str,Test::Builder::_unoverload,Test::Builder::_try,(eval),Test::Builder::__ANON__,(eval),(eval),overload::BEGIN,Devel::ContinuousProfiler::take_snapshot,(eval)
+
+=head1 CAVEATS
+
+=over
+
+=item *
+
+This module's public API is under active development and
+experimentation.
+
+=item *
+
+CPAN testers is showing segfaults. Not sure what's going on there yet.
+
+=back
 
 =head1 INTERNAL API
+
+I'm only mentioning these 
 
 =over
 
