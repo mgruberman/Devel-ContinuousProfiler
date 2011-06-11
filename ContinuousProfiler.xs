@@ -63,8 +63,19 @@ int
 sp_runops(pTHX)
 {
     dVAR;
+#ifdef USE_ITHREADS
+    SV * count_down, *inside_logger, log_size;
+#endif
     register OP *op = PL_op;
+
     while ((PL_op = op = CALL_FPTR(op->op_ppaddr)(aTHX))) {
+
+#ifdef USE_ITHREADS
+        count_down = get_sv("Devel::ContinuousProfiler::count_down", 0);
+        inside_logger = get_sv("Devel::ContinuousProfiler::inside_logger", 0);
+        log_size = get_sv("Devel::ContinuousProfiler::log_size", 0);
+#endif
+
         if ( COUNT_DOWN() ) {
             COUNT_DOWN_dec();
         }
@@ -89,21 +100,9 @@ sp_runops(pTHX)
 void
 _initialize()
 {
-#ifdef USE_ITHREADS
-    count_down = get_sv("Devel::ContinuousProfiler::count_down",GV_ADD);
-#endif
-    COUNT_DOWN_set(0);
-
-#ifdef USE_ITHREADS
-    inside_logger = get_sv("Devel::ContinuousProfiler::is_inside_logger",GV_ADD);
-#endif
-    INSIDE_LOGGER_off();
-
-#ifdef USE_ITHREADS
-    log_size = get_sv("Devel::ContinuousProfiler::log_size",GV_ADD);
-#endif
-    LOG_SIZE_reset();
-
+    get_sv("Devel::ContinuousProfiler::count_down", GV_ADD);
+    get_sv("Devel::ContinuousProfiler::inside_logger", GV_ADD);
+    get_sv("Devel::ContinuousProfiler::log_size", GV_ADD);
     PL_runops = sp_runops;
 }
 
