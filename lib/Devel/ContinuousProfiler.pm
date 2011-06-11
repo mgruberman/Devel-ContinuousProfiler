@@ -127,7 +127,7 @@ sub report_strings {
 
     my $format = "=$$= %${max_length}d %s\n";
     return [
-        "=$$= " . __PACKAGE__ . " profiling stats.\n",
+        "=$$= $0 profiling stats.\n",
         map { sprintf $format, $DATA{$_}[0], $_ }
         sort { $DATA{$b}[0] <=> $DATA{$a}[0] || $DATA{$b}[1] <=> $DATA{$a}[1] }
         keys %DATA
