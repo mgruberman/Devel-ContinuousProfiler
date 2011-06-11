@@ -25,7 +25,7 @@ if ($ENV{PROFILER}) {
         $OUTPUT_SEEKABLE = 1;
     }
 }
-$OUTPUT_HANDLE ||= \ *STDERR;
+$OUTPUT_HANDLE = \ *STDERR unless defined $OUTPUT_HANDLE;
 
 END { report() }
 
