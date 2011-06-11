@@ -57,11 +57,17 @@ sub take_snapshot {
     eval {
 
         # Witty comment
+        my $seen_take_snapshot;
         my @stack;
         for ( my $cx = 0;
               my ( undef, undef, undef, $func ) = caller $cx;
               ++ $cx ) {
-            unshift @stack, $func;
+            if ( $func eq 'Devel::ContinuousProfiler::take_snapshot' ) {
+                $seen_take_snapshot = 1;
+            }
+            elsif ( $seen_take_snapshot ) {
+                unshift @stack, $func;
+            }
         }
 
         my $t = time;
