@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+use Devel::ContinuousProfiler;
 X::a(1) for 1 .. 100_000;
 
 package X;
