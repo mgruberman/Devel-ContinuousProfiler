@@ -48,6 +48,7 @@ sub take_snapshot {
             $DATA{$s} = [
                 1,
                 $t,
+                $t,
             ];
         }
 
