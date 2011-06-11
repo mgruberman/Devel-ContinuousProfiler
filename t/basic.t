@@ -22,5 +22,5 @@ SKIP: {
     unlink $file;
 
     diag( $data );
-    ok( eval $data );
+    ok( eval $data, "It compiles" );
 }
