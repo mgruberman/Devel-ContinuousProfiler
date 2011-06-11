@@ -2,7 +2,7 @@ use Test::More tests => 1;
 require File::Temp;
 
 my $file = File::Temp::tmpnam();
-END { 1 while unlink $file };
+END { unlink $file };
 
 system
     $^X,
