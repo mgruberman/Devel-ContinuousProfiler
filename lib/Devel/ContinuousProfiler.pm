@@ -10,7 +10,6 @@ use XSLoader;
 use constant _COUNT  => 0;
 use constant _DEEPER => 1;
 
-use constant _FILE => 2;
 use constant _FUNC => 3;
 
 our %DATA;
