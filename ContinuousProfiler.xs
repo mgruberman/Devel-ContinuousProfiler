@@ -4,43 +4,10 @@
 
 #include "ppport.h"
 
-/* The count_down variable. */
-#ifdef USE_ITHREADS
-SV *count_down;
-#define COUNT_DOWN()      SvIV    (count_down                     )
-#define COUNT_DOWN_dec()  SvIV_set(count_down, SvIV(count_down) - 1)
-#define COUNT_DOWN_set(i) SvIV_set(count_down, i                   )
-#else
-IV count_down;
-#define COUNT_DOWN()         count_down
-#define COUNT_DOWN_dec()  (--count_down    )
-#define COUNT_DOWN_set(i) (  count_down = i)
-#endif
-
-/* The inside_logger variable */
-#ifdef USE_ITHREADS
-SV *inside_logger;
-#define INSIDE_LOGGER()     SvTRUE  (inside_logger  )
-#define INSIDE_LOGGER_on()  SvIV_set(inside_logger, 1)
-#define INSIDE_LOGGER_off() SvIV_set(inside_logger, 0)
-#else
-IV inside_logger;
-#define INSIDE_LOGGER()     inside_logger
-#define INSIDE_LOGGER_on()  (inside_logger = 1)
-#define INSIDE_LOGGER_off() (inside_logger = 0)
-#endif
-
-/* The log_size variable */
-#ifdef USE_ITHREADS
-SV *log_size;
-#define LOG_SIZE_inc()   SvIV_set(log_size, SvIV(log_size) + 1)
-#define LOG_SIZE_reset() SvIV_set(log_size, 0                 )
-#define LOG_SIZE()       SvIV    (log_size)
-#else
-IV log_size;
-#define LOG_SIZE_inc()   (++log_size    )
-#define LOG_SIZE_reset() (  log_size = 0)
-#define LOG_SIZE()       (  log_size    )
+#ifndef USE_ITHREADS
+int count_down;
+int inside_logger;
+int log_size;
 #endif
 
 void
@@ -59,39 +26,57 @@ take_snapshot(pTHX)
     LEAVE;
 }
 
+
 int
 sp_runops(pTHX)
 {
     dVAR;
 #ifdef USE_ITHREADS
-    SV * count_down, *inside_logger, *log_size;
-#endif
+    SV * count_down_sv, *inside_logger_sv, *log_size_sv;
+    IV count_down;
+
     register OP *op = PL_op;
-
     while ((PL_op = op = CALL_FPTR(op->op_ppaddr)(aTHX))) {
-
-#ifdef USE_ITHREADS
-        count_down = get_sv("Devel::ContinuousProfiler::count_down", 0);
-        inside_logger = get_sv("Devel::ContinuousProfiler::inside_logger", 0);
-        log_size = get_sv("Devel::ContinuousProfiler::log_size", 0);
-#endif
-
-        if ( COUNT_DOWN() ) {
-            COUNT_DOWN_dec();
+        count_down_sv = get_sv("Devel::ContinuousProfiler::count_down", GV_ADD);
+        count_down = SvIV(count_down);
+        if ( count_down > 0 ) {
+            sv_dec(count_down_sv);
         }
         else {
-            if ( INSIDE_LOGGER() ) {
-                LOG_SIZE_inc();
+            inside_logger_sv = get_sv("Devel::ContinuousProfiler::inside_logger", GV_ADD);
+            log_size_sv = get_sv("Devel::ContinuousProfiler::log_size", GV_ADD);
+            if ( SvIV(inside_logger_sv) ) {
+                sv_inc(log_size_sv);
             }
             else {
-                INSIDE_LOGGER_on();
-                LOG_SIZE_reset();
+                SvIV_set(inside_logger_sv, 1);
+                SvIV_set(log_size_sv, 0);
                 take_snapshot(aTHX);
-                COUNT_DOWN_set( LOG_SIZE() << 10 );
-                INSIDE_LOGGER_off();
+                SvIV_set(count_down_sv, SvIV(log_size_sv) << 10);
+                SvIV_set(inside_logger_sv, 0);
             }
         }
     }
+#else
+    register OP *op = PL_op;
+    while ((PL_op = op = CALL_FPTR(op->op_ppaddr)(aTHX))) {
+        if ( count_down > 0 ) {
+            -- count_down;
+        }
+        else {
+            if ( inside_logger ) {
+                ++ log_size;
+            }
+            else {
+                inside_logger = 1;
+                log_size = 0;
+                take_snapshot(aTHX);
+                count_down = log_size << 10;
+                inside_logger = 0;
+            }
+        }
+    }
+#endif
 
     TAINT_NOT;
     return 0;
