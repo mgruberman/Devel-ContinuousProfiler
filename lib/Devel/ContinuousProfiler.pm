@@ -94,32 +94,32 @@ sub report {
     return if $LAST_TIME_REPORT == time;
     $LAST_TIME_REPORT = time;
 
-    my $report = report_string();
+    my $report = report_strings();
 
     if ($OUTPUT_HANDLE && $OUTPUT_SEEKABLE) {
         $OUTPUT_SEEKABLE = seek $OUTPUT_HANDLE, 0, 0;
         truncate $OUTPUT_HANDLE, 0;
-        syswrite $OUTPUT_HANDLE, $report;
+        syswrite $OUTPUT_HANDLE, $_ for @$report;
     } elsif ( $OUTPUT_HANDLE ) {
-        syswrite $OUTPUT_HANDLE, $report;
+        syswrite $OUTPUT_HANDLE, $_ for @$report;
     }
 
     return;
 }
 
-sub report_string {
+sub report_strings {
     my $max_length = 0;
     for ( values %DATA ) {
         $max_length = length if length() > $max_length;
     }
 
     my $format = "=$$= %${max_length}d %s\n";
-    return
-        join '',
-            "=$$= " . __PACKAGE__ . " profiling stats.\n",
-            map { sprintf $format, $DATA{$_}, $_ }
-            sort { $DATA{$b} <=> $DATA{$a} || $a cmp $b }
-            keys %DATA;
+    return [
+        "=$$= " . __PACKAGE__ . " profiling stats.\n",
+        map { sprintf $format, $DATA{$_}, $_ }
+        sort { $DATA{$b} <=> $DATA{$a} || $a cmp $b }
+        keys %DATA
+    ];
 }
 
 'I am an anarchist
@@ -169,6 +169,6 @@ STDERR, or other destinations. By default, this writes to STDERR.
 
 =item report
 
-=item report_string
+=item report_strings
 
 =back
