@@ -17,7 +17,7 @@ is( $?, 0, "@cmd" );
 SKIP: {
     skip "Can't open $file: $!", 2 unless open my $fh, '<', $file;
 
-    $/ = undef;
+    local $/ = undef;
     my $data = readline $fh;
     unlink $file;
 
