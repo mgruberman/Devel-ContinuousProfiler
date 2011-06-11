@@ -10,8 +10,12 @@ use XSLoader;
 use constant _COUNT  => 0;
 use constant _DEEPER => 1;
 
+use constant _FUNC => 3;
+
 our %DATA;
 our $LAST_TIME_REPORT = 0;
+our $FRAME_FORMAT;
+our $FRAME_FORMAT2;
 our $OUTPUT_HANDLE;
 our $OUTPUT_SEEKABLE;
 our $VERSION = '0.07';
@@ -23,10 +27,22 @@ if ($ENV{PROFILER}) {
     if ($args{file}) {
         output_filename( $args{file} );
     }
+    if ($args{frame_format}) {
+        $FRAME_FORMAT = $args{frame_format};
+    }
+    if ($args{frame_format2}) {
+        $FRAME_FORMAT2 = $args{frame_format2};
+    }
 }
 $OUTPUT_HANDLE = \ *STDERR unless defined $OUTPUT_HANDLE;
+$FRAME_FORMAT  = '%' . (1+_FUNC) . '$s' unless defined $FRAME_FORMAT;
+$FRAME_FORMAT2 = '%' . (1+_FILE) . '$s' unless defined $FRAME_FORMAT2;
 
 END { report() }
+
+sub frame_format {
+    return ( $FRAME_FORMAT, $FRAME_FORMAT2 ) = @_;
+}
 
 sub output_handle {
     $OUTPUT_SEEKABLE = 1;
@@ -60,13 +76,15 @@ sub take_snapshot {
         my $seen_take_snapshot;
         my @stack;
         for ( my $cx = 0;
-              my ( undef, undef, undef, $func ) = caller $cx;
+              my @frame = caller $cx;
               ++ $cx ) {
-            if ( $func eq 'Devel::ContinuousProfiler::take_snapshot' ) {
+            if ( $frame[_FUNC] eq 'Devel::ContinuousProfiler::take_snapshot' ) {
                 $seen_take_snapshot = 1;
             }
             elsif ( $seen_take_snapshot ) {
-                unshift @stack, $func;
+                my $p = sprintf($FRAME_FORMAT, @frame);
+                $p ||= sprintf($FRAME_FORMAT2, @frame);
+                unshift @stack, $p;
             }
         }
 
