@@ -64,7 +64,7 @@ sp_runops(pTHX)
 {
     dVAR;
 #ifdef USE_ITHREADS
-    SV * count_down, *inside_logger, log_size;
+    SV * count_down, *inside_logger, *log_size;
 #endif
     register OP *op = PL_op;
 
