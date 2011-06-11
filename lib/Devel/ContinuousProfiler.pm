@@ -217,8 +217,7 @@ Devel::ContinuousProfiler - Ultra cheap profiling for use in production
 
 This module automatically takes periodic snapshots of the callstack
 and prints reports of the hottest code. The CPU cost of doing the
-profiling work is automatically guestimated to be about 1/1024th your
-total.
+profiling work is automatically scaled to about 1/1024th the total.
 
 The report format:
 
@@ -230,8 +229,20 @@ The report format:
 
 An example of some output gleaned from a very short script:
 
-  =14365= t/load.t profiling stats.
-  =14365= 1 Test::More::pass,Test::Builder::ok,Test::Builder::_unoverload_str,Test::Builder::_unoverload,Test::Builder::_try,(eval),Test::Builder::__ANON__,(eval),(eval),overload::BEGIN,Devel::ContinuousProfiler::take_snapshot,(eval)
+  =10203= eg/sample.pl profiling stats.
+  =10203= 11
+  =10203=  6 X::a,X::b
+  =10203=  4 X::a
+  =10203=  4 X::a,X::b,X::c
+  =10203=  2 X::a,X::b,X::c,X::d
+
+=head1 PUBLIC API
+
+The C<PROFILER> environment variable and the C<frame_format> and
+C<output_handle> functions. Ultimately, replace the C<take_snapshot>
+function if you want to get different reports.
+
+Consult the source and this API is still under active development.
 
 =head1 CAVEATS
 
