@@ -150,7 +150,7 @@ A paper airplane';
 
 __END__
 
--head1 NAME
+=head1 NAME
 
 Devel::ContinuousProfiler - Ultra cheap profiling for use in production
 
