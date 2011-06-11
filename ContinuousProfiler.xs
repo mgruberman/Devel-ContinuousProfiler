@@ -81,7 +81,10 @@ sp_runops(pTHX)
                 inside_logger = 1;
                 log_size = 0;
                 take_snapshot(aTHX);
-                count_down = log_size << 10;
+                count_down =
+                    log_size > 1024
+                        ? (log_size << 10)
+                        : (1024 << 10);
                 inside_logger = 0;
             }
         }
