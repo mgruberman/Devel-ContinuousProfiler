@@ -13,10 +13,14 @@ my @cmd = (
 );
 system @cmd;
 is( $?, 0, "@cmd" );
-open my $fh, '<', $file or warn "Can't open $file: $!";
-$/ = undef;
-my $data = readline $fh;
-unlink $file;
 
-diag( $data );
-ok( eval $data );
+SKIP: {
+    skip "Can't open $file: $!", 2 unless open my $fh, '<', $file;
+
+    $/ = undef;
+    my $data = readline $fh;
+    unlink $file;
+
+    diag( $data );
+    ok( eval $data );
+}
