@@ -1,9 +1,11 @@
+use 5.008_000;
 use ExtUtils::MakeMaker;
-use 5.010_000;
 WriteMakefile(
   ABSTRACT_FROM => 'lib/Devel/ContinuousProfiler.pm',
   AUTHOR => 'Josh Jore <jjore@cpan.org>',
-  LICENSE => 'perl',
+  $ExtUtils::MakeMaker::VERSION >= 6.30
+    ? ( LICENSE => 'perl' )
+    : (),
   NAME => 'Devel::ContinuousProfiler',
   VERSION_FROM => 'lib/Devel/ContinuousProfiler.pm',
   OPTIMIZE => '-g',
